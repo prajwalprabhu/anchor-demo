@@ -1,162 +1,27 @@
 // export default Home;
-import { WalletNotConnectedError } from "@solana/wallet-adapter-base";
-import {
-  AnchorWallet,
-  useAnchorWallet,
-  useConnection,
-  useWallet,
-  WalletContextState,
-} from "@solana/wallet-adapter-react";
-import {
-  clusterApiUrl,
-  Connection,
-  Keypair,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
+import { useAnchorWallet } from "@solana/wallet-adapter-react";
+import { Keypair } from "@solana/web3.js";
 import { NextPage } from "next";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState } from "react";
 import * as anchor from "@project-serum/anchor";
 import Redirect from "../components/Redirect";
-import { Program, AnchorProvider } from "@project-serum/anchor";
-import ID from "../anchor_demo.json";
-const IDL = JSON.parse(JSON.stringify(ID));
 
-// const programId = new anchor.web3.PublicKey(
-//   "3SLWpmiJPJbLT4MfnitHHoAZyuayThJMuEmkfMcxeX2o"
-// );
-const programId = ID.metadata.address;
-// const local_account = anchor.web3.Keypair.fromSeed(
-//   Buffer.from("qwertyuiopasdfghjklzxcvbnm,.l;/'")
-// );
-// const local_account = anchor.web3.Keypair.generate();
+import Footer from "../components/Footer";
 let local_account: Keypair;
-import fs from "fs";
-import { BN } from "bn.js";
-const Init = async (
-  wallet: AnchorWallet,
-  setCounter: React.Dispatch<React.SetStateAction<number>>
-) => {
-  //@ts-ignore
-  if (!wallet) {
-    return null;
-  }
-
-  //  const network = clusterApiUrl("localhost");
-  const connection = new Connection("http://localhost:8899");
-  const provider = new AnchorProvider(connection, wallet, {
-    preflightCommitment: "processed",
-  });
-  const program = new anchor.Program(IDL, programId, provider);
-  // const my_account = wallet;
-  // const local_account = anchor.web3.Keypair.fromSecretKey(
-  //   new Uint8Array(secret_key)
-  // );
-  const tx = await program.methods
-    .initialize()
-    .accounts({
-      myAccount: local_account.publicKey,
-      user: provider.wallet.publicKey,
-      // user: local_account.publicKey,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .signers([local_account])
-    .rpc();
-  console.log(tx);
-};
-
-const Increment = async (
-  wallet: AnchorWallet,
-  setCounter: React.Dispatch<React.SetStateAction<number>>
-) => {
-  //  const network = clusterApiUrl("localhost");
-  const connection = new Connection("http://localhost:8899", "processed");
-  const provider = new AnchorProvider(connection, wallet, {
-    preflightCommitment: "processed",
-  });
-  const program = new anchor.Program(IDL, programId, provider);
-  // const my_account = wallet;
-
-  const tx = await program.methods
-    .increment()
-    .accounts({
-      myAccount: local_account.publicKey,
-    })
-    // .signers([my_account])
-    .rpc();
-  console.log(tx);
-  let data = await program.account.myAccount.fetch(local_account.publicKey);
-  setCounter(data.counter);
-  console.log(data);
-};
-const Decrement = async (
-  wallet: AnchorWallet,
-  setCounter: React.Dispatch<React.SetStateAction<number>>
-) => {
-  //  const network = clusterApiUrl("localhost");
-  const connection = new Connection("http://localhost:8899", "processed");
-  const provider = new AnchorProvider(connection, wallet, {
-    preflightCommitment: "processed",
-  });
-  const program = new anchor.Program(IDL, programId, provider);
-  // const my_account = wallet;
-
-  const tx = await program.methods
-    .decrement()
-    .accounts({
-      myAccount: local_account.publicKey,
-    })
-    // .signers([my_account])
-    .rpc();
-  console.log(tx);
-  let data = await program.account.myAccount.fetch(local_account.publicKey);
-  setCounter(data.counter);
-
-  console.log(data);
-};
-const Set = async (
-  wallet: AnchorWallet,
-  val: number,
-  setCounter: React.Dispatch<React.SetStateAction<number>>
-) => {
-  //  const network = clusterApiUrl("localhost");
-  const connection = new Connection("http://localhost:8899", "processed");
-  const provider = new AnchorProvider(connection, wallet, {
-    preflightCommitment: "processed",
-  });
-  const program = new anchor.Program(IDL, programId, provider);
-  // const my_account = wallet;
-
-  const tx = await program.methods
-    .set(val)
-    .accounts({
-      myAccount: local_account.publicKey,
-    })
-    // .signers([my_account])
-    .rpc();
-  console.log(tx);
-  let data = await program.account.myAccount.fetch(local_account.publicKey);
-  setCounter(data.counter);
-
-  console.log(data);
-};
-const fetch_data = async (wallet: AnchorWallet) => {
-  if (!local_account) {
-    return;
-  }
-  const connection = new Connection("http://localhost:8899", "processed");
-  const provider = new AnchorProvider(connection, wallet, {
-    preflightCommitment: "processed",
-  });
-  const program = new anchor.Program(IDL, programId, provider);
-  let data = await program.account.myAccount.fetch(local_account.publicKey);
-  return data;
-};
+import {
+  Decrement,
+  fetch_data,
+  Increment,
+  Init,
+  Set,
+} from "../utils/solana_instruction_helper_functions";
 
 const Styles = {
   button:
-    "bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded-full",
-  container: "flex flex-row ",
+    "bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded-full w-48 ml-[10%]",
+  container: "ml-10 grid justify-center justify",
+  h1: "text-2xl text-blue-900   p-3 ml-[8%]",
+  h12: "justify-center py-3 pl-5 text-blue-700 ml-[10%] border border-blue-400 w-48 mb-2",
 };
 const Home: NextPage = () => {
   const [counter, setCounter] = useState(0);
@@ -164,31 +29,26 @@ const Home: NextPage = () => {
   if (!wallet) {
     return <Redirect to="/connect" />;
   }
+  local_account = anchor.web3.Keypair.fromSeed(wallet.publicKey.toBuffer());
 
-  fetch_data(wallet).then((val) => {
+  fetch_data(wallet, local_account).then((val) => {
     if (val) {
       setCounter(val.counter);
     }
   });
 
-  local_account = anchor.web3.Keypair.fromSeed(wallet.publicKey.toBuffer());
-
   return (
-    <div className="justify-center justify-item-center grid ">
-      <h1 className=" text-2xl text-blue-900   p-3  m-10">
-        Solana Blockchain app{" "}
-      </h1>
-      <h3>Anchor framework (rust) + nextjs(TS) + Phantom Wallet</h3>
-      <div className="h-10 w-48 flex flex-col mt-10 mx-auto my-auto pt-10 justify-items-center">
-        <div>
-          <h1 className="justify-center p-5 ml-5 mx-auto text-blue-700">
-            Couter : <span className="text-blue-900 ">{counter}</span>
-          </h1>
-        </div>
+    <>
+      <div className={Styles.container}>
+        <h1 className={Styles.h1}>Solana Blockchain app </h1>
+        <h3>Anchor framework (rust) + nextjs(TS) + Phantom Wallet</h3>
+        <h1 className={Styles.h12}>
+          Couter : <span className="text-blue-900 ">{counter}</span>
+        </h1>
         <button
           className={Styles.button}
           onClick={() => {
-            Init(wallet, setCounter).then(() =>
+            Init(wallet, setCounter, local_account).then(() =>
               alert("Transaction successfull")
             );
           }}
@@ -198,7 +58,7 @@ const Home: NextPage = () => {
         <button
           className={Styles.button}
           onClick={() => {
-            Increment(wallet, setCounter).then(() =>
+            Increment(wallet, setCounter, local_account).then(() =>
               alert("Transaction successfull")
             );
           }}
@@ -208,7 +68,7 @@ const Home: NextPage = () => {
         <button
           className={Styles.button}
           onClick={() => {
-            Decrement(wallet, setCounter).then(() =>
+            Decrement(wallet, setCounter, local_account).then(() =>
               alert("Transaction successfull")
             );
           }}
@@ -218,15 +78,16 @@ const Home: NextPage = () => {
         <button
           className={Styles.button}
           onClick={() => {
-            Set(wallet, 100, setCounter).then(() =>
+            Set(wallet, setCounter, local_account).then(() =>
               alert("Transaction successfull")
             );
           }}
         >
-          Set 100
+          Set +100
         </button>
+        <Footer />
       </div>
-    </div>
+    </>
   );
 };
 export default Home;
